@@ -6,23 +6,53 @@
 #    By: jyao <jyao@student.42abudhabi.ae>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/01/10 10:29:56 by jyao              #+#    #+#              #
-#    Updated: 2025/01/10 10:42:28 by jyao             ###   ########.fr        #
+#    Updated: 2025/01/10 14:05:41 by jyao             ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
 DOCKERFILE_PATH = ./
 DOCKERFILE_NAME = Dockerfile
 DOCKERFILE_FILE = $(DOCKERFILE_PATH)$(DOCKERFILE_NAME)
+DOCKERFILE_BUILD_CONTEXT = ./
 IMAGE_NAME = ocaml-dev-env:latest
+CONTAINER_NAME = ocaml-dev-env-c
+CONTAINER_WORKDIR = /workdir
 
-all:
-	docker build -f $(DOCKERFILE_FILE) -t $(IMAGE_NAME) $(DOCKERFILE_PATH)
+.PHONY: all usage build start clean fclean
+
+all: usage
+
+usage:
+	@echo "USAGE:"
+	@echo "    <make build>              builds the OCaml development environment docker image"
+	@echo "    <make start [PATH]>       starts the OCaml development environment container at the current working directory"
+	@echo "    <make clean>              clears the OCaml development environment docker container"
+	@echo "    <make fclean>             clears the OCaml development environment docker container and image"
+
+
+build:
+	docker build \
+	-f $(DOCKERFILE_FILE) \
+	-t $(IMAGE_NAME) \
+	$(DOCKERFILE_BUILD_CONTEXT)
+
+start:
+	DIRECTORY=$(PWD)
+ifeq ($(words $(MAKECMDGOALS)), 2)
+	mkdir -p $(word 2, $(MAKECMDGOALS))
+	DIRECTORY=$(word 2, $(MAKECMDGOALS))
+endif
+	docker run -it \
+	-p 443:443 -p 80:80 \
+	--name $(CONTAINER_NAME) \
+	--rm \
+	-w /workdir \
+	-v "$(DIRECTORY):$(CONTAINER_WORKDIR)" \
+	$(IMAGE_NAME) \
+	"/bin/zsh"
 
 clean:
-	docker rmi -f $(IMAGE_NAME)
+	docker rm -f $(CONTAINER_NAME)
 
 fclean: clean
-
-re: fclean all
-
-.PHONY: all clean fclean re
+	docker rmi -f $(IMAGE_NAME)
