@@ -13,14 +13,6 @@ FROM ubuntu:${UBUNTU_VER_PENULTIMATE}
 
 ### Installation phase
 
-###### OCAML setup
-RUN <<EOF
-apt update
-apt install -y opam
-opam init -y
-eval $(opam env)
-EOF
-
 ###### Utilties install
 RUN <<EOF
 apt update
@@ -33,7 +25,22 @@ bash -c "$(wget https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/i
 echo 'PROMPT=%B%F{blue}[DOCKER]%f%b$PROMPT' >> /root/.zshrc
 EOF
 
+###### OCAML setup
+RUN <<EOF
+apt update
+apt install -y opam
+opam init --disable-sandboxing -y
+EOF
+######### OCAML developer tools install
+RUN <<EOF
+opam install -y ocaml-lsp-server odoc ocamlformat utop
+EOF
+
 ### Environment configuration
+###### Source envs for OCAML
+RUN <<EOF
+echo 'eval $(opam env)' >> /root/.zshrc
+EOF
 
 ### Metadata about the image specified here in the Dockerfile
 LABEL \
