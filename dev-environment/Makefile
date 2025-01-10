@@ -6,7 +6,7 @@
 #    By: jyao <jyao@student.42abudhabi.ae>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/01/10 10:29:56 by jyao              #+#    #+#              #
-#    Updated: 2025/01/10 14:05:41 by jyao             ###   ########.fr        #
+#    Updated: 2025/01/10 14:41:02 by jyao             ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -26,6 +26,7 @@ usage:
 	@echo "USAGE:"
 	@echo "    <make build>              builds the OCaml development environment docker image"
 	@echo "    <make start [PATH]>       starts the OCaml development environment container at the current working directory"
+	@echo "                              if [PATH] a full/absolute path is specified, the container will load all files at this location into the container instead"
 	@echo "    <make clean>              clears the OCaml development environment docker container"
 	@echo "    <make fclean>             clears the OCaml development environment docker container and image"
 
@@ -37,19 +38,31 @@ build:
 	$(DOCKERFILE_BUILD_CONTEXT)
 
 start:
-	DIRECTORY=$(PWD)
+
 ifeq ($(words $(MAKECMDGOALS)), 2)
 	mkdir -p $(word 2, $(MAKECMDGOALS))
-	DIRECTORY=$(word 2, $(MAKECMDGOALS))
-endif
 	docker run -it \
 	-p 443:443 -p 80:80 \
 	--name $(CONTAINER_NAME) \
 	--rm \
 	-w /workdir \
-	-v "$(DIRECTORY):$(CONTAINER_WORKDIR)" \
+	-v "$(word 2, $(MAKECMDGOALS)):$(CONTAINER_WORKDIR)" \
 	$(IMAGE_NAME) \
 	"/bin/zsh"
+else
+ifeq ($(words $(MAKECMDGOALS)), 1)
+	docker run -it \
+	-p 443:443 -p 80:80 \
+	--name $(CONTAINER_NAME) \
+	--rm \
+	-w /workdir \
+	-v "$(PWD):$(CONTAINER_WORKDIR)" \
+	$(IMAGE_NAME) \
+	"/bin/zsh"
+else
+	make usage
+endif
+endif
 
 clean:
 	docker rm -f $(CONTAINER_NAME)
